@@ -7,7 +7,6 @@
   "env": {
     "NEXT_PUBLIC_EMAILJS_SERVICE_ID": "service_8aqxvxm",
     "NEXT_PUBLIC_EMAILJS_TEMPLATE_ID": "template_u060w1m",
-    "NEXT_PUBLIC_EMAILJS_PUBLIC_KEY": "6cSAxaJE99_Ao_3MU",
-    "EMAILJS_PRIVATE_KEY": "@emailjs_private_key"
+    "NEXT_PUBLIC_EMAILJS_PUBLIC_KEY": "6cSAxaJE99_Ao_3MU"
   }
 } 
