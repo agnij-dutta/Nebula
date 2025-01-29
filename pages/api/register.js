@@ -1,12 +1,10 @@
-import fs from 'fs';
-import path from 'path';
-import emailjs from '@emailjs/nodejs';
+import { Redis } from '@upstash/redis'
 
-// Initialize EmailJS with both private and public keys
-emailjs.init({
-  publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY,
-  privateKey: process.env.EMAILJS_PRIVATE_KEY,
-});
+// Initialize Redis with the provided credentials
+const redis = new Redis({
+  url: 'https://current-grizzly-59539.upstash.io',
+  token: 'AeiTAAIjcDFjYzQ3ZTZjZDY0OGE0YjQ4OTEwZGVmNGQ5NDk2ZDYyMXAxMA'  // Using the full access token for write operations
+})
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -14,6 +12,10 @@ export default async function handler(req, res) {
   }
 
   try {
+    // Test Redis connection
+    const testConnection = await redis.ping();
+    console.log('Redis connection test:', testConnection);
+
     const { email, walletAddress } = req.body;
 
     if (!email) {
@@ -30,67 +32,58 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'Invalid email format' });
     }
 
-    // Create data directory if it doesn't exist
-    const dataDir = path.join(process.cwd(), 'data');
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir);
-    }
-
-    // Path to registrations file
-    const filePath = path.join(dataDir, 'registrations.json');
-
-    // Read existing registrations
-    let registrations = [];
-    if (fs.existsSync(filePath)) {
-      const fileContent = fs.readFileSync(filePath, 'utf8');
-      registrations = JSON.parse(fileContent);
-    }
-
-    // Check if email or wallet already exists
-    if (registrations.some(reg => reg.email === email)) {
+    console.log('Checking for existing email:', email);
+    // Check if email already exists
+    const existingEmail = await redis.get(`email:${email}`);
+    if (existingEmail) {
       return res.status(400).json({ message: 'Email already registered' });
     }
-    if (registrations.some(reg => reg.walletAddress === walletAddress)) {
+
+    console.log('Checking for existing wallet:', walletAddress);
+    // Check if wallet already exists
+    const existingWallet = await redis.get(`wallet:${walletAddress}`);
+    if (existingWallet) {
       return res.status(400).json({ message: 'Wallet address already registered' });
     }
 
-    // Add new registration
+    // Store the registration with a timestamp
     const timestamp = new Date().toISOString();
-    registrations.push({
+    const registrationData = {
       email,
       walletAddress,
       timestamp
-    });
+    };
 
-    // Save updated registrations
-    fs.writeFileSync(filePath, JSON.stringify(registrations, null, 2));
+    console.log('Storing registration data:', registrationData);
 
-    // Send notification email
     try {
-      const templateParams = {
-        from_name: email.split('@')[0],
-        from_email: email,
-        wallet_address: walletAddress,
-        reply_to: email,
-      };
+      // Store data with both email and wallet address as keys for quick lookups
+      await redis.set(`email:${email}`, JSON.stringify(registrationData));
+      await redis.set(`wallet:${walletAddress}`, JSON.stringify(registrationData));
+      
+      // Add to the list of all registrations
+      await redis.lpush('all_registrations', JSON.stringify(registrationData));
+      
+      // Increment registration counter
+      await redis.incr('registration_count');
 
-      await emailjs.send(
-        process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID,
-        process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID,
-        templateParams,
-        {
-          publicKey: process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY,
-        }
-      );
-    } catch (emailError) {
-      console.error('Email sending error:', emailError);
-      // Don't return error to client, as registration was successful
+      console.log('Successfully stored registration data');
+    } catch (storageError) {
+      console.error('Storage error:', storageError);
+      throw storageError;
     }
 
-    // Send success response
-    res.status(200).json({ message: 'Registration successful' });
+    // Return success response
+    return res.status(200).json({ 
+      message: 'Registration successful!',
+      timestamp
+    });
+
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Internal server error' });
+    return res.status(500).json({ 
+      message: 'An error occurred during registration. Please try again.',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
-} 
+}
