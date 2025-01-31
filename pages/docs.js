@@ -124,7 +124,7 @@ const sections = [
     `,
     subsections: [
       {
-        title: 'Q2 2024',
+        title: 'Q2 2025',
         content: `
           - Platform beta launch
           - Initial research DAOs
@@ -133,7 +133,7 @@ const sections = [
         `,
       },
       {
-        title: 'Q3 2024',
+        title: 'Q3 2025',
         content: `
           - Advanced AI features
           - Cross-chain integration
@@ -142,7 +142,7 @@ const sections = [
         `,
       },
       {
-        title: 'Q4 2024',
+        title: 'Q4 2025',
         content: `
           - Enhanced governance tools
           - Data marketplace launch
