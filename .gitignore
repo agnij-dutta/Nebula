@@ -13,6 +13,13 @@
 # production
 /build
 
+# hardhat
+hardhat.config.js
+
+# web3
+/scripts
+/cache
+
 # misc
 .DS_Store
 *.pem
@@ -24,6 +31,7 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env
 
 # vercel
 .vercel

@@ -6,6 +6,8 @@ import Footer from '../components/Footer';
 import Scene3D from '../components/Scene3D';
 import Features from '../components/Features';
 import Constellations from '../components/Constellations';
+import { ethers } from 'ethers';
+import { signNebulaRegistration } from '../components/SignMessage';
 
 // Add this CSS class to the button elements:
 const ctaButtonClass = `
@@ -88,6 +90,14 @@ export default function Home() {
     setStatus({ type: '', message: '' });
 
     try {
+      // First sign the message with the smart contract
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      setStatus({ type: 'info', message: 'Please sign the registration message...' });
+      
+      await signNebulaRegistration(signer);
+      
+      // Then submit the registration
       const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
@@ -99,7 +109,7 @@ export default function Home() {
       const data = await response.json();
 
       if (response.ok) {
-        setStatus({ type: 'success', message: 'Registration successful! Welcome to Nebula Launchpad.' });
+        setStatus({ type: 'success', message: 'Registration successful! Welcome to Nebula.' });
         setEmail('');
         setWalletAddress('');
         setIsWalletConnected(false);
@@ -108,7 +118,11 @@ export default function Home() {
         setStatus({ type: 'error', message: data.message || 'Registration failed. Please try again.' });
       }
     } catch (error) {
-      setStatus({ type: 'error', message: 'An error occurred. Please try again later.' });
+      console.error('Registration error:', error);
+      setStatus({ 
+        type: 'error', 
+        message: error.message || 'An error occurred during registration. Please try again later.' 
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -132,7 +146,7 @@ export default function Home() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8 }}
             >
-              Nebula Launchpad
+              Nebula
             </motion.h1>
             <motion.p 
               className="text-xl sm:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto"
@@ -259,7 +273,7 @@ export default function Home() {
             <h2 className="text-3xl sm:text-4xl font-bold text-center mb-12 bg-gradient-text">FAQ</h2>
             <div className="space-y-8">
               <div className="glass-effect p-6 rounded-lg">
-                <h3 className="text-xl font-semibold mb-4">What is Nebula Launchpad?</h3>
+                <h3 className="text-xl font-semibold mb-4">What is Nebula?</h3>
                 <p className="text-gray-300">
                   A decentralized platform that combines IP marketplace functionality with research funding mechanisms and DAO governance, built on the Avalanche network.
                 </p>
@@ -300,11 +314,11 @@ export default function Home() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
-              <h3 className="text-2xl font-bold mb-4">Join Nebula Launchpad</h3>
+              <h3 className="text-2xl font-bold mb-4">Join Nebula</h3>
               <p className="text-gray-300 mb-6">
-                Sign up to start your journey in decentralized science.
+                Sign up and register your interest in Nebula.
               </p>
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4 mt-6">
                 <input
                   type="email"
                   placeholder="Email address"
